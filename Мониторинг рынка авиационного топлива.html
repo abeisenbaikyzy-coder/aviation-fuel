@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Управленческий дашборд мониторинга объёмов и стоимости авиационного топлива на 2026 год">
+  <meta name="theme-color" content="#0b2545">
+  <title>Мониторинг рынка авиационного топлива</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='13' fill='%230b2545'/%3E%3Cpath d='M13 34h14l9-17h6l-4 17h12c3 0 5 2 5 4s-2 4-5 4H38l4 10h-6l-9-10H13l5-4z' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --navy: #061f3e;
+      --navy-2: #103d70;
+      --ink: #102338;
+      --muted: #4c6076;
+      --line: #cbd6e1;
+      --line-strong: #9fb1c3;
+      --surface: #ffffff;
+      --canvas: #e8eef4;
+      --blue: #0c65c7;
+      --blue-soft: #dceeff;
+      --orange: #d56a14;
+      --orange-soft: #fff1e6;
+      --neutral: #edf1f4;
+      --neutral-2: #dde4ea;
+      --green: #287a55;
+      --amber: #b7791f;
+      --red: #b64747;
+      --radius: 8px;
+      --shadow: 0 2px 10px rgba(11, 37, 69, .05);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--canvas); }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.35;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    button, [tabindex] { font: inherit; }
+
+    button:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid rgba(20, 103, 196, .25);
+      outline-offset: -2px;
+    }
+
+    .dashboard {
+      width: min(1600px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 20px 20px;
+    }
+
+    /* Header */
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 16px 18px;
+      color: #fff;
+      background: var(--navy);
+      border: 1px solid var(--navy);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 14px rgba(6, 31, 62, .12);
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: #78b8ff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(22px, 2vw, 31px);
+      line-height: 1.1;
+      letter-spacing: -.025em;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: #c7d7e8;
+      font-size: 14px;
+    }
+
+    .updated {
+      flex: 0 0 auto;
+      margin-top: 5px;
+      padding: 7px 10px;
+      color: #e9f2fb;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .28);
+      border-radius: 5px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* Forecast strip */
+    .forecast {
+      margin-top: 12px;
+      padding: 13px 15px 12px;
+      background: var(--surface);
+      border: 1px solid #91a6bb;
+      border-left: 5px solid var(--blue);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .forecast-top {
+      display: grid;
+      grid-template-columns: minmax(245px, 1.3fr) repeat(4, minmax(130px, .7fr));
+      align-items: center;
+      gap: 12px;
+    }
+
+    .forecast-title {
+      margin: 0;
+      color: var(--navy);
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .metric {
+      min-width: 0;
+      padding-left: 13px;
+      border-left: 1px solid var(--line);
+    }
+
+    .metric-label {
+      display: block;
+      min-height: 31px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .metric-value {
+      display: block;
+      margin-top: 3px;
+      color: var(--navy);
+      font-size: 18px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .volume-track {
+      display: grid;
+      grid-template-columns: 1.05fr .85fr .65fr .45fr;
+      gap: 3px;
+      height: 7px;
+      margin-top: 11px;
+      overflow: hidden;
+      border-radius: 3px;
+      background: var(--neutral);
+    }
+
+    .volume-track span:nth-child(1) { background: #c8d1da; }
+    .volume-track span:nth-child(2) { background: #d7dee5; }
+    .volume-track span:nth-child(3) { background: #bcc7d1; }
+    .volume-track span:nth-child(4) { background: #e2e7ec; }
+
+    .forecast-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .legend-dot.passenger { background: var(--blue); }
+    .legend-dot.cargo { background: var(--orange); }
+
+    /* Main split */
+    .markets {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      margin-top: 14px;
+      background: var(--surface);
+      border: 1px solid #8fa4b8;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .market { min-width: 0; padding: 15px; }
+    .market + .market { border-left: 2px solid var(--navy); }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -15px -15px 12px;
+      padding: 13px 15px 12px;
+      background: var(--navy);
+    }
+
+    .section-kicker {
+      display: inline-block;
+      margin-bottom: 3px;
+      color: #79b9ff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    h2 { margin: 0; color: #fff; font-size: 20px; line-height: 1.15; }
+    .section-description { margin: 4px 0 0; color: #c7d7e8; font-size: 12px; }
+
+    .transport-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      padding-top: 3px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .tag.passenger { color: #fff; background: var(--blue); }
+    .tag.cargo { color: #fff; background: var(--orange); }
+    .legend-word { color: var(--muted); font-size: 11px; }
+    .section-header .legend-word { color: #d9e6f2; }
+
+    .panel-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 7px;
+    }
+
+    h3 { margin: 0; color: var(--navy); font-size: 14px; }
+    .unit { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+    .table-frame {
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    tr:last-child > * { border-bottom: 0; }
+    tr > *:last-child { border-right: 0; }
+
+    thead th {
+      height: 32px;
+      padding: 5px 4px;
+      color: #fff;
+      background: var(--navy);
+      font-size: 11px;
+      font-weight: 750;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    tbody th, tbody td { transition: background-color .12s ease, box-shadow .12s ease; }
+    tbody tr:hover > * { background: #f7faff; }
+
+    .airline-table .company-col { width: 66%; text-align: left; padding-left: 10px; }
+    .airline-table .active-month-col { width: 34%; }
+    .airline-table tbody th { height: 41px; padding: 4px 7px; text-align: left; background: #fbfcfd; }
+    .airline-table tbody td { height: 41px; padding: 4px 8px; text-align: center; color: #43576d; background: #fff; }
+
+    .company {
+      display: grid;
+      grid-template-columns: 27px minmax(0, 1fr) 21px;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .company-id {
+      display: inline-grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      color: var(--navy);
+      background: #eef2f6;
+      border: 1px solid #d5dde5;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    .company-name {
+      min-width: 0;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .price-cell { background: #e7edf3 !important; cursor: default; }
+    .price-cell span { font-weight: 750; }
+
+    .month-filter {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 4px;
+      margin: 0 0 8px;
+      padding: 6px;
+      background: #dce5ee;
+      border: 1px solid #9db0c3;
+      border-radius: 6px;
+    }
+
+    .month-button {
+      width: 100%;
+      min-width: 0;
+      margin: 0;
+      min-height: 31px;
+      padding: 5px 2px;
+      color: var(--navy);
+      background: #fff;
+      border: 1px solid #a8b8c8;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .month-button:hover { color: #fff; background: var(--navy-2); border-color: var(--navy-2); }
+    .month-button[aria-pressed="true"] { color: #fff; background: var(--navy); border-color: var(--navy); box-shadow: 0 2px 5px rgba(6, 31, 62, .2); }
+
+    .insight {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      color: #536579;
+      background: #f6f8fa;
+      border-left: 3px solid #aab7c4;
+      font-size: 12px;
+    }
+
+    .insight strong { color: var(--navy); }
+
+    /* Price source matrix */
+    .source-table .source-col { width: 166px; text-align: left; padding-left: 8px; }
+    .source-table thead th:not(:first-child) { cursor: default; }
+    .source-table tbody th { padding: 6px 7px; background: #fbfcfd; text-align: left; }
+    .source-table tbody td { padding: 4px; background: #fff; }
+    .source-table tbody tr.argus > * { background: var(--blue-soft); }
+    .source-table tbody tr.argus:hover > * { background: #dceeff; }
+
+    .source-name { display: block; color: var(--ink); font-size: 12px; font-weight: 750; line-height: 1.15; }
+    .source-type { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.15; }
+
+    .dual-price { display: grid; gap: 2px; }
+    .price-line {
+      display: grid;
+      grid-template-columns: 17px 1fr;
+      align-items: center;
+      min-height: 20px;
+      padding: 2px 4px;
+      background: rgba(237, 241, 244, .86);
+      border-radius: 3px;
+      color: #536579;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .mini-tag {
+      display: inline-grid;
+      place-items: center;
+      width: 14px;
+      height: 14px;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .mini-tag.passenger { background: var(--blue); }
+    .mini-tag.cargo { background: var(--orange); }
+    .unified-price { display: grid; place-items: center; min-height: 42px; padding: 4px; color: #536579; background: var(--neutral); border-radius: 3px; font-size: 11px; font-weight: 700; text-align: center; }
+
+    .column-highlight { background: #f0f5fa !important; box-shadow: inset 1px 0 0 #b4c6d7, inset -1px 0 0 #b4c6d7; }
+    .argus .column-highlight { background: #d9ebfb !important; }
+    .intersection-highlight { background: #e3eef8 !important; box-shadow: inset 0 0 0 2px #7799b9 !important; }
+    .argus .intersection-highlight { background: #cde6fa !important; }
+
+    /* Custom tooltip */
+    .tooltip {
+      position: fixed;
+      z-index: 50;
+      max-width: 260px;
+      padding: 7px 9px;
+      color: #fff;
+      background: #14283f;
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(10, 25, 42, .18);
+      font-size: 12px;
+      line-height: 1.3;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .1s ease, transform .1s ease;
+    }
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Responsive: all information remains visible, no horizontal scrolling */
+    @media (max-width: 1180px) {
+      .dashboard { padding: 14px; }
+      .forecast-top { grid-template-columns: 1.15fr repeat(4, .72fr); }
+      .market { padding: 12px; }
+      .section-header { margin: -12px -12px 12px; padding: 12px; }
+      .source-table .source-col { width: 140px; }
+      .company { grid-template-columns: 23px minmax(0, 1fr) 19px; gap: 4px; }
+      .company-id { width: 23px; height: 23px; font-size: 9px; }
+      .tag { width: 19px; height: 19px; }
+      .month-filter { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 900px) {
+      .forecast-top { grid-template-columns: repeat(4, 1fr); }
+      .forecast-title { grid-column: 1 / -1; }
+      .metric:first-of-type { border-left: 0; padding-left: 0; }
+      .markets { grid-template-columns: 1fr; }
+      .market + .market { border-left: 0; border-top: 2px solid var(--navy); }
+      .source-table .source-col { width: 180px; }
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 14px; }
+      .dashboard { padding: 10px; }
+      .masthead { display: block; }
+      h1 { font-size: 23px; }
+      .updated { display: inline-block; margin-top: 11px; }
+      .forecast { padding: 12px; }
+      .forecast-top { grid-template-columns: 1fr 1fr; }
+      .forecast-title { grid-column: 1 / -1; }
+      .metric { padding-left: 9px; }
+      .metric:nth-of-type(odd) { border-left: 0; padding-left: 0; }
+      .metric-label { min-height: 0; font-size: 11px; }
+      .metric-value { font-size: 16px; }
+      .forecast-foot { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .market { padding: 11px; }
+      .section-header { margin: -11px -11px 12px; padding: 12px 11px; }
+      .section-header { display: block; }
+      .transport-legend { margin-top: 8px; }
+      .month-filter { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .month-button { min-height: 44px; font-size: 12px; touch-action: manipulation; }
+      .source-table { table-layout: auto; }
+      .source-table thead { display: none; }
+      .source-table tbody { display: block; }
+      .source-table tbody tr { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line-strong); }
+      .source-table tbody tr:last-child { border-bottom: 0; }
+      .source-table tbody th { grid-column: 1 / -1; width: auto !important; height: auto; min-height: 42px; border-right: 0; }
+      .source-table tbody td { position: relative; display: block; height: 48px; padding: 20px 3px 3px; border-bottom: 0; }
+      .source-table tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 4px;
+        left: 3px;
+        right: 3px;
+        color: #607084;
+        font-size: 11px;
+        font-weight: 750;
+        text-align: center;
+      }
+      .source-table tbody tr { grid-template-columns: repeat(2, 1fr); }
+      .source-table tbody td { height: auto; min-height: 74px; padding-top: 22px; }
+      .company { grid-template-columns: 27px minmax(0, 1fr) 21px; }
+      .panel-title-row { align-items: flex-start; }
+      .unit { white-space: normal; text-align: right; }
+    }
+
+    @supports (padding: max(0px)) {
+      @media (max-width: 620px) {
+        .dashboard {
+          padding-top: max(10px, env(safe-area-inset-top));
+          padding-right: max(10px, env(safe-area-inset-right));
+          padding-bottom: max(14px, env(safe-area-inset-bottom));
+          padding-left: max(10px, env(safe-area-inset-left));
+        }
+      }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .dashboard { width: 100%; padding: 0; }
+      .markets, .forecast { box-shadow: none; }
+      .tooltip { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Управленческий мониторинг</p>
+        <h1>Мониторинг рынка авиационного топлива</h1>
+        <p class="subtitle">Прогноз объёмов и цен на 2026 год</p>
+      </div>
+      <div class="updated" title="Дата будет указана после подключения источников">Последнее обновление: <strong>—</strong></div>
+    </header>
+
+    <section class="forecast" aria-labelledby="forecast-title">
+      <div class="forecast-top">
+        <h2 class="forecast-title" id="forecast-title">Прогноз потребности в авиационном топливе на 2026 год</h2>
+        <div class="metric" title="Совокупная прогнозная потребность на 2026 год">
+          <span class="metric-label">Общий прогнозный объём</span>
+          <span class="metric-value">— <small>тыс. тонн</small></span>
+        </div>
+        <div class="metric" title="Объём, обеспечиваемый внутренним рынком">
+          <span class="metric-label">Внутреннее обеспечение</span>
+          <span class="metric-value">— <small>тыс. тонн</small></span>
+        </div>
+        <div class="metric" title="Расчётная потребность в импортных поставках">
+          <span class="metric-label">Потребность в импорте</span>
+          <span class="metric-value">— <small>тыс. тонн</small></span>
+        </div>
+        <div class="metric" title="Баланс между прогнозной потребностью и обеспечением">
+          <span class="metric-label">Дефицит или резерв</span>
+          <span class="metric-value">— <small>тыс. тонн</small></span>
+        </div>
+      </div>
+      <div class="volume-track" aria-label="Будущая структура распределения общего объёма: данные не подключены">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="forecast-foot">
+        <span>Составная шкала распределения общего объёма · данные ожидаются</span>
+        <div class="legend" aria-label="Типы перевозок">
+          <span class="legend-item"><span class="legend-dot passenger"></span>Пассажирские перевозки</span>
+          <span class="legend-item"><span class="legend-dot cargo"></span>Грузовые перевозки</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="markets">
+      <section class="market domestic" aria-labelledby="domestic-title">
+        <header class="section-header">
+          <div>
+            <span class="section-kicker">Контур 01</span>
+            <h2 id="domestic-title">Внутренний рынок</h2>
+            <p class="section-description">Ежемесячные цены закупки авиационного топлива казахстанскими авиаперевозчиками</p>
+          </div>
+          <div class="transport-legend" aria-label="Легенда типов перевозок">
+            <span class="tag passenger" title="Пассажирские перевозки">П</span><span class="legend-word">Пасс.</span>
+            <span class="tag cargo" title="Грузовые перевозки">Г</span><span class="legend-word">Груз</span>
+          </div>
+        </header>
+
+        <div class="panel-title-row">
+          <h3 id="airline-prices-title">Цены авиаперевозчиков по месяцам</h3>
+          <span class="unit">Отображается выбранный месяц · $/т</span>
+        </div>
+        <div class="month-filter" id="month-filter" aria-label="Выбор отображаемого месяца"></div>
+        <div class="table-frame">
+          <table class="airline-table" aria-labelledby="airline-prices-title">
+            <thead>
+              <tr>
+                <th class="company-col" scope="col">Авиаперевозчик</th>
+                <th class="active-month-col" id="selected-month-heading" scope="col">Январь · $/т</th>
+              </tr>
+            </thead>
+            <tbody id="airline-body"></tbody>
+          </table>
+        </div>
+        <p class="insight"><strong>Основное наблюдение:</strong> будет сформировано после подключения данных</p>
+      </section>
+
+      <section class="market international" aria-labelledby="international-title">
+        <header class="section-header">
+          <div>
+            <span class="section-kicker">Контур 02</span>
+            <h2 id="international-title">Международный рынок и импорт</h2>
+            <p class="section-description">Источники поставок и сравнение цен по аэропортам</p>
+          </div>
+        </header>
+
+        <section aria-labelledby="source-title">
+          <div class="panel-title-row">
+            <h3 id="source-title">Источники цен по аэропортам</h3>
+            <span class="unit">П / Г одновременно · $/т</span>
+          </div>
+          <div class="table-frame">
+            <table class="source-table" aria-labelledby="source-title">
+              <thead>
+                <tr>
+                  <th class="source-col" scope="col">Источник цены</th>
+                  <th scope="col" data-airport-col="0">Астана</th>
+                  <th scope="col" data-airport-col="1">Алматы</th>
+                  <th scope="col" data-airport-col="2">Шымкент</th>
+                  <th scope="col" data-airport-col="3">Караганда</th>
+                  <th scope="col" data-airport-col="4">Другие аэропорты</th>
+                </tr>
+              </thead>
+              <tbody id="source-body"></tbody>
+            </table>
+          </div>
+          <p class="insight"><strong>Основное наблюдение:</strong> будет сформировано после подключения данных</p>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+
+  <script>
+    // Static data model: placeholders only, without demo figures.
+    const months = [
+      { short: "Янв", full: "Январь" }, { short: "Фев", full: "Февраль" },
+      { short: "Мар", full: "Март" }, { short: "Апр", full: "Апрель" },
+      { short: "Май", full: "Май" }, { short: "Июн", full: "Июнь" },
+      { short: "Июл", full: "Июль" }, { short: "Авг", full: "Август" },
+      { short: "Сен", full: "Сентябрь" }, { short: "Окт", full: "Октябрь" },
+      { short: "Ноя", full: "Ноябрь" }, { short: "Дек", full: "Декабрь" }
+    ];
+    const airlines = [
+      { id: "AA", name: "Air Astana", mode: "passenger" },
+      { id: "FA", name: "FlyArystan", mode: "passenger" },
+      { id: "SC", name: "SCAT Airlines", mode: "passenger" },
+      { id: "QA", name: "Qazaq Air", mode: "passenger" },
+      { id: "ЖЭ", name: "Жезказган-Эйр", mode: "passenger" },
+      { id: "AC", name: "Alatau Air Cargo", mode: "cargo" },
+      { id: "ДП", name: "Другие перевозчики", mode: "passenger" }
+    ];
+
+    const airports = ["Астана", "Алматы", "Шымкент", "Караганда", "Другие аэропорты"];
+    const sources = [
+      { name: "Argus Jet Fuel", type: "Benchmark", rowClass: "argus", unified: true },
+      { name: "КМГ-Аэро", type: "Поставщик" },
+      { name: "Прямые цены аэропортов", type: "Аэропорт" },
+      { name: "Трейдеры", type: "Трейдер" },
+      { name: "Цены Ернара", type: "Внутренний источник" },
+      { name: "Другие предложения", type: "Прочие" }
+    ];
+
+    const airlineBody = document.getElementById("airline-body");
+    airlines.forEach((airline) => {
+      const row = document.createElement("tr");
+      const modeLetter = airline.mode === "cargo" ? "Г" : "П";
+      const modeName = airline.mode === "cargo" ? "Грузовые перевозки" : "Пассажирские перевозки";
+      row.innerHTML = `
+        <th scope="row">
+          <div class="company">
+            <span class="company-id" title="${airline.name}">${airline.id}</span>
+            <span class="company-name">${airline.name}</span>
+            <span class="tag ${airline.mode}" data-tooltip="${modeName}">${modeLetter}</span>
+          </div>
+        </th>
+        <td class="price-cell" data-airline="${airline.name}" data-mode="${modeName}" data-label="Январь" data-tooltip="${airline.name} · Январь · ${modeName}: — $/т"><span>—</span></td>
+      `;
+      airlineBody.appendChild(row);
+    });
+
+    const sourceBody = document.getElementById("source-body");
+    sources.forEach((source) => {
+      const row = document.createElement("tr");
+      if (source.rowClass) row.className = source.rowClass;
+      const cells = airports.map((airport, index) => {
+        const content = source.unified
+          ? `<div class="unified-price">Единая цена —</div>`
+          : `<div class="dual-price"><div class="price-line"><span class="mini-tag passenger">П</span><span>—</span></div><div class="price-line"><span class="mini-tag cargo">Г</span><span>—</span></div></div>`;
+        return `<td data-airport-col="${index}" data-label="${airport}" tabindex="0" data-tooltip="${source.name} · ${airport}: ${source.unified ? "единая цена —" : "пассажирские —; грузовые —"}">${content}</td>`;
+      }).join("");
+      row.innerHTML = `<th scope="row"><span class="source-name">${source.name}</span><span class="source-type">${source.type}</span></th>${cells}`;
+      sourceBody.appendChild(row);
+    });
+
+    // Month filter: only the selected month is shown in the price matrix.
+    const monthFilter = document.getElementById("month-filter");
+    const selectedMonthHeading = document.getElementById("selected-month-heading");
+    months.forEach((month, index) => {
+      const button = document.createElement("button");
+      button.className = "month-button";
+      button.type = "button";
+      button.textContent = month.short;
+      button.dataset.month = String(index);
+      button.setAttribute("aria-pressed", index === 0 ? "true" : "false");
+      button.setAttribute("aria-label", `Показать цены за ${month.full.toLowerCase()}`);
+      monthFilter.appendChild(button);
+    });
+
+    const monthButtons = [...monthFilter.querySelectorAll(".month-button")];
+    monthButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const month = months[Number(button.dataset.month)];
+        monthButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+        selectedMonthHeading.textContent = `${month.full} · $/т`;
+        document.querySelectorAll(".price-cell").forEach((cell) => {
+          cell.dataset.label = month.full;
+          cell.dataset.tooltip = `${cell.dataset.airline} · ${month.full} · ${cell.dataset.mode}: — $/т`;
+        });
+      });
+    });
+
+    // Airport matrix hover/focus highlights the active column and intersection.
+    const sourceTable = document.querySelector(".source-table");
+    const airportCells = [...sourceTable.querySelectorAll("[data-airport-col]")];
+    function clearAirportHighlight() {
+      airportCells.forEach((cell) => cell.classList.remove("column-highlight", "intersection-highlight"));
+    }
+    function highlightAirport(cell) {
+      const index = cell.dataset.airportCol;
+      clearAirportHighlight();
+      sourceTable.querySelectorAll(`[data-airport-col="${index}"]`).forEach((item) => item.classList.add("column-highlight"));
+      if (cell.tagName === "TD") cell.classList.add("intersection-highlight");
+    }
+    airportCells.forEach((cell) => {
+      cell.addEventListener("mouseenter", () => highlightAirport(cell));
+      cell.addEventListener("focus", () => highlightAirport(cell));
+      cell.addEventListener("blur", clearAirportHighlight);
+    });
+    sourceTable.addEventListener("mouseleave", clearAirportHighlight);
+
+    // Accessible, lightweight tooltips for abbreviated indicators.
+    const tooltip = document.getElementById("tooltip");
+    const tooltipTargets = [...document.querySelectorAll("[data-tooltip]")];
+    function showTooltip(target) {
+      tooltip.textContent = target.dataset.tooltip;
+      tooltip.classList.add("visible");
+      const rect = target.getBoundingClientRect();
+      const tipRect = tooltip.getBoundingClientRect();
+      const left = Math.min(window.innerWidth - tipRect.width - 8, Math.max(8, rect.left + rect.width / 2 - tipRect.width / 2));
+      const top = rect.top > tipRect.height + 12 ? rect.top - tipRect.height - 7 : rect.bottom + 7;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+    function hideTooltip() { tooltip.classList.remove("visible"); }
+    tooltipTargets.forEach((target) => {
+      target.addEventListener("mouseenter", () => showTooltip(target));
+      target.addEventListener("mouseleave", hideTooltip);
+      target.addEventListener("focus", () => showTooltip(target));
+      target.addEventListener("blur", hideTooltip);
+    });
+  </script>
+</body>
+</html>
