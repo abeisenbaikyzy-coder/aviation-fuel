@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#061f3e">
+  <meta name="description" content="Сводный управленческий мониторинг цен на авиационное топливо по аэропортам Казахстана">
+  <title>Мониторинг цен на авиационное топливо</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='13' fill='%23061f3e'/%3E%3Cpath d='M13 34h14l9-17h6l-4 17h12c3 0 5 2 5 4s-2 4-5 4H38l4 10h-6l-9-10H13l5-4z' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --navy: #061f3e;
+      --navy-2: #0d3765;
+      --blue: #0b67c9;
+      --blue-soft: #e6f1fd;
+      --ink: #102338;
+      --muted: #314a63;
+      --canvas: #e7edf3;
+      --surface: #ffffff;
+      --line: #c9d5e1;
+      --line-dark: #96aabd;
+      --na: #eef1f4;
+      --amber: #b86709;
+      --amber-soft: #fff4e6;
+      --green: #207455;
+      --radius: 10px;
+      --shadow: 0 4px 16px rgba(6, 31, 62, .08);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--canvas); }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+    .dashboard { width: min(1480px, 100%); min-height: 100vh; margin: 0 auto; padding: 18px; }
+
+    /* Executive header */
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 22px 24px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .eyebrow { margin: 0 0 5px; color: #7dc0ff; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 850px; font-size: clamp(27px, 3vw, 42px); line-height: 1.08; letter-spacing: -.03em; }
+    .subtitle { margin: 9px 0 0; color: #c9d9e9; font-size: 16px; }
+    .header-meta { display: grid; gap: 8px; flex: 0 0 auto; min-width: 190px; }
+    .meta-item { padding: 9px 12px; color: #e9f3fc; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.24); border-radius: 6px; font-size: 13px; }
+    .meta-item strong { color: #fff; }
+
+    /* Shared sections */
+    .section { margin-top: 14px; background: var(--surface); border: 1px solid var(--line-dark); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 14px 16px 13px; color: #fff; background: var(--navy); }
+    .section-index { display: block; margin-bottom: 2px; color: #7dc0ff; font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 0; font-size: 21px; line-height: 1.15; }
+    .section-subtitle { margin: 4px 0 0; color: #e3edf7; font-size: 14px; }
+    .section-unit { color: #f2f7fc; font-size: 13px; font-weight: 650; white-space: nowrap; }
+
+    /* Comparison matrix */
+    .table-wrap { width: 100%; overflow: hidden; }
+    table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    th, td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    tr:last-child > * { border-bottom: 0; }
+    tr > *:last-child { border-right: 0; }
+    thead th { padding: 11px 9px; color: var(--navy); background: #edf3f8; font-size: 13px; font-weight: 800; text-align: center; }
+    .source-col { width: 205px; text-align: left; }
+    tbody th { padding: 12px; background: #f8fafc; text-align: left; vertical-align: middle; }
+    tbody td { padding: 10px; background: #fff; text-align: center; vertical-align: middle; }
+    tbody tr:hover > * { background: #f0f6fc; }
+    tbody tr.argus > * { background: var(--blue-soft); }
+    tbody tr.echelon > * { background: #f4f6f8; }
+    tbody tr.airport-buy > th { border-left: 4px solid var(--green); }
+    tbody tr.airport-sell > th { border-left: 4px solid var(--amber); }
+    .row-title { display: block; color: var(--navy); font-size: 14px; font-weight: 800; }
+    .row-type { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .price { display: block; color: var(--navy); font-size: 16px; font-weight: 850; letter-spacing: -.01em; }
+    .price-sub { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.25; }
+    .na { display: inline-flex; align-items: center; justify-content: center; min-width: 48px; padding: 4px 8px; color: #657587; background: var(--na); border: 1px solid #d5dce3; border-radius: 999px; font-size: 11px; font-weight: 800; }
+
+    /* Airport details */
+    .airport-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+    .airport-card { min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+    .airport-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px 13px; background: #edf3f8; border-bottom: 1px solid var(--line); }
+    .airport-card h3 { margin: 0; color: var(--navy); font-size: 18px; }
+    .airport-card-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 650; }
+    .price-list { margin: 0; padding: 0; list-style: none; }
+    .price-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 13px; border-bottom: 1px solid var(--line); }
+    .price-item:last-child { border-bottom: 0; }
+    .price-label { color: var(--ink); font-size: 12px; font-weight: 750; }
+    .price-context { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 600; }
+    .price-value { color: var(--navy); font-size: 15px; font-weight: 850; text-align: right; white-space: nowrap; }
+    .price-local { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 650; }
+    .price-item.buy { box-shadow: inset 3px 0 0 var(--green); }
+    .price-item.sell { box-shadow: inset 3px 0 0 var(--amber); }
+    .price-item.na-item { background: #f7f8fa; box-shadow: inset 3px 0 0 #9aa8b6; }
+    .vat-note { margin: 0 12px 12px; padding: 8px 10px; color: #563200; background: var(--amber-soft); border: 1px solid #e1b977; border-radius: 5px; font-size: 12px; font-weight: 750; }
+
+    @media (max-width: 1120px) {
+      .airport-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .source-col { width: 175px; }
+    }
+    @media (max-width: 760px) {
+      .dashboard { padding: 10px; }
+      .masthead { display: block; padding: 18px; }
+      h1 { font-size: 29px; }
+      .header-meta { grid-template-columns: 1fr 1fr; min-width: 0; margin-top: 15px; }
+      .section-head { display: block; }
+      .section-unit { display: block; margin-top: 8px; }
+      .comparison-table { table-layout: auto; }
+      .comparison-table thead { display: none; }
+      .comparison-table tbody { display: block; }
+      .comparison-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 2px solid var(--navy); }
+      .comparison-table tbody tr:last-child { border-bottom: 0; }
+      .comparison-table tbody th { grid-column: 1 / -1; width: auto; min-height: 58px; border-right: 0; }
+      .comparison-table tbody td { position: relative; min-height: 86px; padding: 27px 7px 10px; }
+      .comparison-table tbody td::before { content: attr(data-airport); position: absolute; top: 7px; left: 7px; right: 7px; color: var(--muted); font-size: 10px; font-weight: 850; text-align: center; text-transform: uppercase; letter-spacing: .04em; }
+      .airport-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 390px) {
+      h1 { font-size: 26px; }
+      .header-meta { grid-template-columns: 1fr; }
+      .comparison-table tbody tr { grid-template-columns: 1fr; }
+      .comparison-table tbody td { min-height: 76px; }
+    }
+    @supports (padding: max(0px)) {
+      @media (max-width: 760px) {
+        .dashboard {
+          padding-top: max(10px, env(safe-area-inset-top));
+          padding-right: max(10px, env(safe-area-inset-right));
+          padding-bottom: max(14px, env(safe-area-inset-bottom));
+          padding-left: max(10px, env(safe-area-inset-left));
+        }
+      }
+    }
+    @media print {
+      body { background: #fff; }
+      .dashboard { width: 100%; padding: 0; }
+      .section, .masthead { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Управленческий мониторинг</p>
+        <h1>Мониторинг цен на авиационное топливо</h1>
+        <p class="subtitle">Сводка по аэропортам Казахстана и источникам цен</p>
+      </div>
+      <div class="header-meta" aria-label="Параметры сводки">
+        <div class="meta-item">Базовая единица: <strong>$/т</strong></div>
+        <div class="meta-item">Обновление сводки: <strong>—</strong></div>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="comparison-title">
+      <header class="section-head">
+        <div><span class="section-index">Сводная матрица</span><h2 id="comparison-title">Сравнение цен по источникам и аэропортам</h2><p class="section-subtitle">Единый управленческий срез без разделения на внутренний и международный рынки</p></div>
+        <span class="section-unit">Основная единица · $/т</span>
+      </header>
+      <div class="table-wrap">
+        <table class="comparison-table" aria-labelledby="comparison-title">
+          <thead><tr><th class="source-col" scope="col">Источник / тип цены</th><th scope="col">Астана</th><th scope="col">Алматы</th><th scope="col">Шымкент</th><th scope="col">Караганда</th></tr></thead>
+          <tbody>
+            <tr class="argus">
+              <th scope="row"><span class="row-title">Argus</span><span class="row-type">Benchmark · август</span></th>
+              <td data-airport="Астана"><span class="price">$1 550–1 650</span><span class="price-sub">диапазон Argus</span></td>
+              <td data-airport="Алматы"><span class="price">$1 550–1 800</span><span class="price-sub">диапазон Argus</span></td>
+              <td data-airport="Шымкент"><span class="na">N/A</span><span class="price-sub">нет данных</span></td>
+              <td data-airport="Караганда"><span class="price">$1 500–1 800</span><span class="price-sub">диапазон Argus</span></td>
+            </tr>
+            <tr class="echelon">
+              <th scope="row"><span class="row-title">Echelon</span><span class="row-type">Внешний источник</span></th>
+              <td data-airport="Астана"><span class="na">N/A</span></td><td data-airport="Алматы"><span class="na">N/A</span></td><td data-airport="Шымкент"><span class="na">N/A</span></td><td data-airport="Караганда"><span class="na">N/A</span></td>
+            </tr>
+            <tr class="airport-buy">
+              <th scope="row"><span class="row-title">Прямые цены аэропортов</span><span class="row-type">Закупка</span></th>
+              <td data-airport="Астана"><span class="price">$1 350</span><span class="price-sub">613 тыс. ₸/т</span></td>
+              <td data-airport="Алматы"><span class="price">$2 153 / $1 750</span><span class="price-sub">местное / импорт</span></td>
+              <td data-airport="Шымкент"><span class="price">$1 585–1 717</span><span class="price-sub">720–780 тыс. ₸/т</span></td>
+              <td data-airport="Караганда"><span class="price">$1 981</span><span class="price-sub">900 тыс. ₸/т · на 25.07</span></td>
+            </tr>
+            <tr class="airport-sell">
+              <th scope="row"><span class="row-title">Прямые цены аэропортов</span><span class="row-type">Реализация</span></th>
+              <td data-airport="Астана"><span class="na">N/A</span><span class="price-sub">не раскрывается</span></td>
+              <td data-airport="Алматы"><span class="price">$1 767</span><span class="price-sub">793 тыс. ₸/т</span></td>
+              <td data-airport="Шымкент"><span class="price">$1 717–2 091</span><span class="price-sub">780–950 тыс. ₸/т · с НДС</span></td>
+              <td data-airport="Караганда"><span class="price">$1 534</span><span class="price-sub">697 тыс. ₸/т · средняя за неделю</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="airport-title">
+      <header class="section-head">
+        <div><span class="section-index">Детализация</span><h2 id="airport-title">Прямые цены аэропортов</h2><p class="section-subtitle">Структура закупочных цен и цен реализации по состоянию на 14 сентября</p></div>
+        <span class="section-unit">$/т · справочно тыс. ₸/т</span>
+      </header>
+      <div class="airport-grid">
+        <article class="airport-card">
+          <header class="airport-card-head"><div><h3>Алматы</h3><span class="airport-card-sub">Прямые данные аэропорта</span></div></header>
+          <ul class="price-list">
+            <li class="price-item buy"><span class="price-label">Закупка · местное топливо<span class="price-context">Внутреннее происхождение</span></span><span class="price-value">$2 153<span class="price-local">978 тыс. ₸/т</span></span></li>
+            <li class="price-item buy"><span class="price-label">Закупка · импорт<span class="price-context">Импортное происхождение</span></span><span class="price-value">$1 750<span class="price-local">795 тыс. ₸/т</span></span></li>
+            <li class="price-item sell"><span class="price-label">Реализация<span class="price-context">Цена продажи топлива</span></span><span class="price-value">$1 767<span class="price-local">793 тыс. ₸/т</span></span></li>
+          </ul>
+        </article>
+        <article class="airport-card">
+          <header class="airport-card-head"><div><h3>Астана</h3><span class="airport-card-sub">Прямые данные аэропорта</span></div></header>
+          <ul class="price-list">
+            <li class="price-item buy"><span class="price-label">Закупка<span class="price-context">Коммерческая цена</span></span><span class="price-value">$1 350<span class="price-local">613 тыс. ₸/т</span></span></li>
+            <li class="price-item na-item"><span class="price-label">Реализация<span class="price-context">Цена не раскрывается</span></span><span class="price-value"><span class="na">N/A</span></span></li>
+          </ul>
+        </article>
+        <article class="airport-card">
+          <header class="airport-card-head"><div><h3>Шымкент</h3><span class="airport-card-sub">Прямые данные аэропорта</span></div></header>
+          <ul class="price-list">
+            <li class="price-item buy"><span class="price-label">Закупка<span class="price-context">Ценовой диапазон</span></span><span class="price-value">$1 585–1 717<span class="price-local">720–780 тыс. ₸/т</span></span></li>
+            <li class="price-item sell"><span class="price-label">Реализация<span class="price-context">Ценовой диапазон</span></span><span class="price-value">$1 717–2 091<span class="price-local">780–950 тыс. ₸/т</span></span></li>
+          </ul>
+          <p class="vat-note">Цены указаны с НДС</p>
+        </article>
+        <article class="airport-card">
+          <header class="airport-card-head"><div><h3>Караганда</h3><span class="airport-card-sub">Прямые данные аэропорта</span></div></header>
+          <ul class="price-list">
+            <li class="price-item buy"><span class="price-label">Закупка<span class="price-context">Цена на 25.07</span></span><span class="price-value">$1 981<span class="price-local">900 тыс. ₸/т</span></span></li>
+            <li class="price-item sell"><span class="price-label">Реализация<span class="price-context">Средняя цена за последнюю неделю</span></span><span class="price-value">$1 534<span class="price-local">697 тыс. ₸/т</span></span></li>
+          </ul>
+          <p class="vat-note">Цены указаны без НДС</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
